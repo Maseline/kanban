@@ -14,7 +14,7 @@ plugins=(
     "sops"
 )
 for plugin in "${plugins[@]}"; do
-    asdf plugin-add "$plugin" || true
+    asdf plugin add "$plugin" || true
     # the || true is to prevent the script from stopping if the plugin is already installed
 done
 echo "Installation complete"
