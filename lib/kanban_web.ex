@@ -43,7 +43,7 @@ defmodule KanbanWeb do
         layouts: [html: KanbanWeb.Layouts]
 
       import Plug.Conn
-      import KanbanWeb.Gettext
+      use Gettext, backend: KanbanWeb.Gettext
 
       unquote(verified_routes())
     end
@@ -85,7 +85,7 @@ defmodule KanbanWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import KanbanWeb.CoreComponents
-      import KanbanWeb.Gettext
+      use Gettext, backend: KanbanWeb.Gettext
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
