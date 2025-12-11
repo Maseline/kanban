@@ -36,3 +36,6 @@ jobs:
 
       - name: Run tests
         run: mix test --max-failures 1 --trace --warnings-as-errors
+
+      - name: Check code formatting
+        run: mix format --check-formatted
