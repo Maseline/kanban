@@ -7,7 +7,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-22.04
-    name: Compile
+    name: Compile with mix test, format, dialyzer & unused deps check
     env:
       MIX_ENV: test
     steps:
@@ -32,6 +32,7 @@ jobs:
       - name: Get dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: mix deps.get
+        
       - run: mix compile --warnings-as-errors
 
       - name: Run tests
@@ -55,3 +56,6 @@ jobs:
 
       - name: Dialyzer 
         run: mix dialyzer --format github
+
+      - name: Check unused deps
+        run: mix deps.unlock --check-unused
