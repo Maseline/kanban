@@ -9,7 +9,12 @@ defmodule Kanban.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      dialyzer: [
+        plt_core_path: "priv/plts/core.plt",
+        plt_file: {:no_warn, "priv/plts/project.plt"},
+        plt_add_apps: [:ex_unit]
+      ]
     ]
   end
 
@@ -47,7 +52,9 @@ defmodule Kanban.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"}
+      {:plug_cowboy, "~> 2.5"},
+      {:dialyxir, "~>1.4", only: [:dev, :test], runtime: false},
+      {:f1, git: "https://github.com/Maseline/f1"}
     ]
   end
 

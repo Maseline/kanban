@@ -1,0 +1,113 @@
+name: CI/CD Elixir
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-22.04
+    name: Compile with mix test, format, dialyzer & unused deps check
+    env:
+      MIX_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1.17.3
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os}}-mix-${{ hashFiles('**/mix.lock')}}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Authenticate git for private deps
+        run: git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Get dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: mix deps.get
+        
+      - run: mix compile --warnings-as-errors
+
+      - name: Run tests
+        run: mix test --max-failures 1 --trace --warnings-as-errors
+
+      - name: Check code formatting
+        run: mix format --check-formatted
+
+      - name: Cache plt files
+        uses: actions/cache@v4
+        env:
+          EX_OTP_VERSIONS: ${{ steps.setup-beam.outputs.elixir-version }}
+          KEY_BASE: plt-${{ runner.os }}-${{ env.EX_OTP_VERSIONS }}
+        with:
+          path: |
+            priv/plts
+          key: |
+           ${{ env.KEY_BASE }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ env.KEY_BASE}}-
+
+      - name: Dialyzer 
+        run: mix dialyzer --format github
+
+      - name: Check unused deps
+        run: mix deps.unlock --check-unused
+  
+  build-push:
+    runs-on: ubuntu-22.04
+    needs: ci
+    name: Build docker image and pushes to ghrc.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to ghrc
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_PAT }}
+      
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/maseline/kanban
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=pr
+            type=sha,format=short
+
+      - name: Parse versions from .tool-versions
+        id: parse-asdf
+        run: ./scripts/versions.sh
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          cache-from: type=registry,ref=ghcr.io/maseline/kanban:cache
+          cache-to: type=registry,ref=ghcr.io/maseline/kanban:cache,mode=max
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+
+
