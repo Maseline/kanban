@@ -54,7 +54,7 @@ defmodule Kanban.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:dialyxir, "~>1.4", only: [:dev, :test], runtime: false},
-      {:f1, git: "https://github.com/Maseline/f1"}
+      {:f1, git: "https://github.com/Maseline/f1", branch: "tester"}
     ]
   end
 
